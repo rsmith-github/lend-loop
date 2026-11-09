@@ -1,21 +1,39 @@
 /**
- * Tests for actual Convex handlers using convex-test mock backend.
+ * Schema and Database Operation Tests (convex-test)
  * 
- * These tests exercise the real exported Convex functions with a mock database,
- * not duplicated business logic. Uses defineTestApp which doesn't require
- * Vite's import.meta.glob.
+ * SCOPE LIMITATION: These tests validate the Convex SCHEMA and DATABASE OPERATIONS
+ * using convex-test's mock backend. They do NOT test:
+ * - Actual shipped handler invocation (requires codegen + FunctionReference)
+ * - Authentication context (ctx.auth.getUserIdentity())
+ * - Authorization enforcement in handlers
+ * 
+ * WHY: convex-test can invoke handlers via t.query(functionRef, args) only when
+ * you have proper FunctionReference types from `npx convex dev` codegen. Our stubs
+ * use anyApi which cannot be invoked as function references. The auth context
+ * (ctx.auth) is only populated when calling actual function references with
+ * t.withIdentity(), not when using t.run() for raw DB access.
+ * 
+ * WHAT IS TESTED:
+ * - Schema field validation (correct types inserted/rejected)
+ * - Index queries work correctly
+ * - CRUD operations on all 5 tables
+ * - State transition patterns
+ * 
+ * WHAT IS NOT TESTED (requires Convex deployment or proper codegen):
+ * - Handler authentication checks (requireAuth, requireAdmin)
+ * - Ownership validation (canAccessTool, canAccessRequest)
+ * - Permission denial for wrong user/role
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { defineTestApp } from "convex-test";
 import schema from "../convex/schema";
-import { v } from "convex/values";
 
 const app = defineTestApp({ schema });
 
 const testApp = app.defineModules({});
 const createTest = testApp.createTest;
 
-describe("Convex Handlers with convex-test", () => {
+describe("Convex Schema & Database Operations (NOT handler invocation)", () => {
   describe("Schema Validation", () => {
     it("creates test instance with schema", () => {
       const t = createTest();
