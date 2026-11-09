@@ -52,27 +52,25 @@ export const markEventProcessed = internalMutation({
   },
 });
 
-export const getOverdueLoansInternal = internalQuery({
+export const getFailedEvents = query({
   args: {},
   handler: async (ctx) => {
-    const approvedLoans = await ctx.db
-      .query("borrowRequests")
-      .withIndex("by_status", (q) => q.eq("status", "approved"))
+    await requireAuth(ctx);
+
+    const events = await ctx.db
+      .query("automationEvents")
+      .withIndex("by_status", (q) => q.eq("status", "failed"))
       .collect();
 
-    const enriched = await Promise.all(
-      approvedLoans.map(async (loan) => {
-        const tool = await ctx.db.get(loan.toolId);
-        const borrower = await ctx.db.get(loan.borrowerId);
-        return {
-          ...loan,
-          toolName: tool?.name ?? "Unknown",
-          borrowerEmail: borrower?.email ?? "",
-        };
-      })
-    );
-
-    return enriched;
+    return events.map((event) => ({
+      _id: event._id,
+      eventType: event.eventType,
+      resourceType: event.resourceType,
+      resourceId: event.resourceId,
+      attempts: event.attempts,
+      createdAt: event.createdAt,
+      lastAttemptAt: event.lastAttemptAt,
+    }));
   },
 });
 
