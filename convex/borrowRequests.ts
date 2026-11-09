@@ -296,6 +296,8 @@ export const getAllLoans = query({
 export const getOverdueLoans = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
+
     const today = new Date().toISOString().split("T")[0];
 
     const approvedLoans = await ctx.db
