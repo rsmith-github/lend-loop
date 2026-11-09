@@ -1,28 +1,17 @@
 /**
  * Schema and Database Operation Tests (convex-test)
  * 
- * SCOPE LIMITATION: These tests validate the Convex SCHEMA and DATABASE OPERATIONS
- * using convex-test's mock backend. They do NOT test:
- * - Actual shipped handler invocation (requires codegen + FunctionReference)
- * - Authentication context (ctx.auth.getUserIdentity())
- * - Authorization enforcement in handlers
+ * These tests validate Convex SCHEMA and raw DATABASE OPERATIONS using
+ * convex-test's mock backend with t.run() for direct DB access.
  * 
- * WHY: convex-test can invoke handlers via t.query(functionRef, args) only when
- * you have proper FunctionReference types from `npx convex dev` codegen. Our stubs
- * use anyApi which cannot be invoked as function references. The auth context
- * (ctx.auth) is only populated when calling actual function references with
- * t.withIdentity(), not when using t.run() for raw DB access.
+ * For actual handler authentication/authorization tests, see:
+ * - tests/handler-auth.test.ts (37 tests using makeFunctionReference + withIdentity)
  * 
- * WHAT IS TESTED:
+ * WHAT IS TESTED HERE:
  * - Schema field validation (correct types inserted/rejected)
  * - Index queries work correctly
  * - CRUD operations on all 5 tables
  * - State transition patterns
- * 
- * WHAT IS NOT TESTED (requires Convex deployment or proper codegen):
- * - Handler authentication checks (requireAuth, requireAdmin)
- * - Ownership validation (canAccessTool, canAccessRequest)
- * - Permission denial for wrong user/role
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { defineTestApp } from "convex-test";
