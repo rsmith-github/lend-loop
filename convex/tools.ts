@@ -210,7 +210,12 @@ export const adminDeleteTool = mutation({
       .collect();
 
     for (const request of requests) {
-      await ctx.db.patch(request._id, { status: "declined" });
+      if (request.status === "pending" || request.status === "approved") {
+        await ctx.db.patch(request._id, {
+          status: "declined",
+          updatedAt: Date.now(),
+        });
+      }
     }
 
     await ctx.db.delete(args.toolId);
@@ -221,7 +226,10 @@ export const adminDeleteTool = mutation({
 export const getCategories = query({
   args: {},
   handler: async (ctx) => {
-    const tools = await ctx.db.query("tools").collect();
+    const tools = await ctx.db
+      .query("tools")
+      .withIndex("by_available", (q) => q.eq("isAvailable", true))
+      .collect();
     const categories = [...new Set(tools.map((t) => t.category))];
     return categories.sort();
   },
