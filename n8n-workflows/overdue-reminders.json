@@ -16,7 +16,10 @@
       "name": "Daily 9 AM Check",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -26,7 +29,10 @@
       "name": "Compute GET Signature",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
@@ -53,7 +59,10 @@
       "name": "Fetch Overdue Loans",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -79,7 +88,10 @@
       "name": "Has Overdue?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [900, 300]
+      "position": [
+        900,
+        300
+      ]
     },
     {
       "parameters": {
@@ -90,7 +102,10 @@
       "name": "Split Loans",
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
-      "position": [1120, 200]
+      "position": [
+        1120,
+        200
+      ]
     },
     {
       "parameters": {
@@ -100,7 +115,10 @@
       "name": "Send Reminder (Mock)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1340, 200],
+      "position": [
+        1340,
+        200
+      ],
       "notesInFlow": true,
       "notes": "Replace with real email/notification service"
     },
@@ -112,7 +130,10 @@
       "name": "Compute POST Signature",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1560, 200]
+      "position": [
+        1560,
+        200
+      ]
     },
     {
       "parameters": {
@@ -146,7 +167,10 @@
       "name": "Mark Overdue in Convex",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1780, 200]
+      "position": [
+        1780,
+        200
+      ]
     },
     {
       "parameters": {
@@ -156,7 +180,10 @@
       "name": "Log Result",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2000, 200]
+      "position": [
+        2000,
+        200
+      ]
     },
     {
       "parameters": {},
@@ -164,7 +191,10 @@
       "name": "No Overdue Loans",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [1120, 400]
+      "position": [
+        1120,
+        400
+      ]
     }
   ],
   "connections": {
@@ -278,5 +308,6 @@
     }
   ],
   "triggerCount": 0,
-  "versionId": "1"
+  "versionId": "1",
+  "id": "lendloop-overdue-reminders"
 }

@@ -16,7 +16,10 @@
       "name": "Check Pending Events",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -41,7 +44,10 @@
       "name": "Fetch Pending Events",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [460, 300],
+      "position": [
+        460,
+        300
+      ],
       "notesInFlow": true,
       "notes": "Signature computed in Code node below. This placeholder shows header structure."
     },
@@ -53,7 +59,10 @@
       "name": "Compute Signature",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [340, 300]
+      "position": [
+        340,
+        300
+      ]
     },
     {
       "parameters": {
@@ -79,7 +88,10 @@
       "name": "Has Events?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -90,7 +102,10 @@
       "name": "Split Events",
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
-      "position": [900, 200]
+      "position": [
+        900,
+        200
+      ]
     },
     {
       "parameters": {
@@ -100,7 +115,10 @@
       "name": "Send Notification (Mock)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1120, 200],
+      "position": [
+        1120,
+        200
+      ],
       "notesInFlow": true,
       "notes": "Replace with real notification: email, Slack, push, etc."
     },
@@ -130,7 +148,10 @@
       "name": "Mark Event Sent",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1340, 200]
+      "position": [
+        1340,
+        200
+      ]
     },
     {
       "parameters": {
@@ -140,7 +161,10 @@
       "name": "Compute Mark Signature",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1230, 200]
+      "position": [
+        1230,
+        200
+      ]
     },
     {
       "parameters": {},
@@ -148,7 +172,10 @@
       "name": "No Events",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [900, 400]
+      "position": [
+        900,
+        400
+      ]
     }
   ],
   "connections": {
@@ -249,5 +276,6 @@
     }
   ],
   "triggerCount": 0,
-  "versionId": "1"
+  "versionId": "1",
+  "id": "lendloop-request-notifications"
 }
