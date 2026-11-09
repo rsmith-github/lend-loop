@@ -1,0 +1,253 @@
+{
+  "name": "LendLoop Request Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Check Pending Events",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CONVEX_HTTP_URL }}/api/webhooks/pending-events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-lendloop-timestamp",
+              "value": "={{ Date.now() }}"
+            },
+            {
+              "name": "x-lendloop-signature",
+              "value": "={{ $jmespath($env.N8N_WEBHOOK_SECRET, '@') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-events",
+      "name": "Fetch Pending Events",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "notesInFlow": true,
+      "notes": "Signature computed in Code node below. This placeholder shows header structure."
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n\nconst timestamp = Date.now().toString();\nconst secret = $env.N8N_WEBHOOK_SECRET;\nconst message = `${timestamp}.`;\n\nconst signature = crypto\n  .createHmac('sha256', secret)\n  .update(message)\n  .digest('hex');\n\nreturn {\n  timestamp,\n  signature,\n  convexUrl: $env.CONVEX_HTTP_URL\n};"
+      },
+      "id": "compute-signature",
+      "name": "Compute Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [340, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.events.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        }
+      },
+      "id": "has-events",
+      "name": "Has Events?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "events",
+        "options": {}
+      },
+      "id": "split-events",
+      "name": "Split Events",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const event = $input.first().json;\n\n// Log notification (mock - replace with real notification service)\nconsole.log(`[NOTIFICATION] Event: ${event.eventType}`);\nconsole.log(`  Resource: ${event.resourceType}/${event.resourceId}`);\nconsole.log(`  Payload:`, JSON.stringify(event.payload));\n\n// Return minimal data for status update\nreturn {\n  eventId: event._id,\n  eventType: event.eventType,\n  notified: true,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "send-notification",
+      "name": "Send Notification (Mock)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 200],
+      "notesInFlow": true,
+      "notes": "Replace with real notification: email, Slack, push, etc."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONVEX_HTTP_URL }}/api/webhooks/mark-event-sent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-lendloop-timestamp",
+              "value": "={{ Date.now() }}"
+            },
+            {
+              "name": "x-lendloop-signature",
+              "value": "={{ $json.signature }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ eventId: $json.eventId, success: true }) }}",
+        "options": {}
+      },
+      "id": "mark-sent",
+      "name": "Mark Event Sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n\nconst eventId = $input.first().json.eventId;\nconst body = JSON.stringify({ eventId, success: true });\nconst timestamp = Date.now().toString();\nconst secret = $env.N8N_WEBHOOK_SECRET;\nconst message = `${timestamp}.${body}`;\n\nconst signature = crypto\n  .createHmac('sha256', secret)\n  .update(message)\n  .digest('hex');\n\nreturn {\n  eventId,\n  body,\n  timestamp,\n  signature\n};"
+      },
+      "id": "compute-mark-signature",
+      "name": "Compute Mark Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1230, 200]
+    },
+    {
+      "parameters": {},
+      "id": "no-events",
+      "name": "No Events",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "Check Pending Events": {
+      "main": [
+        [
+          {
+            "node": "Compute Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Signature": {
+      "main": [
+        [
+          {
+            "node": "Fetch Pending Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Pending Events": {
+      "main": [
+        [
+          {
+            "node": "Has Events?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Events?": {
+      "main": [
+        [
+          {
+            "node": "Split Events",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Events": {
+      "main": [
+        [
+          {
+            "node": "Send Notification (Mock)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Notification (Mock)": {
+      "main": [
+        [
+          {
+            "node": "Compute Mark Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Mark Signature": {
+      "main": [
+        [
+          {
+            "node": "Mark Event Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "lendloop",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "triggerCount": 0,
+  "versionId": "1"
+}

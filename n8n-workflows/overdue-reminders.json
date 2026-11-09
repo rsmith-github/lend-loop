@@ -1,0 +1,282 @@
+{
+  "name": "LendLoop Overdue Reminders",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "daily-trigger",
+      "name": "Daily 9 AM Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n\nconst timestamp = Date.now().toString();\nconst secret = $env.N8N_WEBHOOK_SECRET;\nconst message = `${timestamp}.`;\n\nconst signature = crypto\n  .createHmac('sha256', secret)\n  .update(message)\n  .digest('hex');\n\nreturn {\n  timestamp,\n  signature,\n  convexUrl: $env.CONVEX_HTTP_URL\n};"
+      },
+      "id": "compute-get-signature",
+      "name": "Compute GET Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.convexUrl }}/api/webhooks/get-overdue",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-lendloop-timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "name": "x-lendloop-signature",
+              "value": "={{ $json.signature }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "fetch-overdue",
+      "name": "Fetch Overdue Loans",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.overdueLoans?.length || 0 }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        }
+      },
+      "id": "has-overdue",
+      "name": "Has Overdue?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "overdueLoans",
+        "options": {}
+      },
+      "id": "split-loans",
+      "name": "Split Loans",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const loan = $input.first().json;\n\n// Log reminder (mock - replace with real notification)\nconsole.log(`[OVERDUE REMINDER]`);\nconsole.log(`  Tool: ${loan.toolName}`);\nconsole.log(`  Borrower: ${loan.borrowerEmail}`);\nconsole.log(`  Due: ${loan.endDate}`);\nconsole.log(`  Idempotency Key: ${loan.idempotencyKey}`);\n\n// Return data for status update\nreturn {\n  requestId: loan.requestId,\n  idempotencyKey: loan.idempotencyKey,\n  borrowerEmail: loan.borrowerEmail,\n  toolName: loan.toolName,\n  reminded: true\n};"
+      },
+      "id": "send-reminder",
+      "name": "Send Reminder (Mock)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 200],
+      "notesInFlow": true,
+      "notes": "Replace with real email/notification service"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n\nconst { requestId, idempotencyKey } = $input.first().json;\nconst body = JSON.stringify({ requestId, idempotencyKey });\nconst timestamp = Date.now().toString();\nconst secret = $env.N8N_WEBHOOK_SECRET;\nconst message = `${timestamp}.${body}`;\n\nconst signature = crypto\n  .createHmac('sha256', secret)\n  .update(message)\n  .digest('hex');\n\nreturn {\n  requestId,\n  idempotencyKey,\n  body,\n  timestamp,\n  signature\n};"
+      },
+      "id": "compute-post-signature",
+      "name": "Compute POST Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONVEX_HTTP_URL }}/api/webhooks/overdue-check",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-lendloop-timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "name": "x-lendloop-signature",
+              "value": "={{ $json.signature }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "mark-overdue",
+      "name": "Mark Overdue in Convex",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.first().json;\nconsole.log('[OVERDUE STATUS UPDATE]', JSON.stringify(result));\nreturn result;"
+      },
+      "id": "log-result",
+      "name": "Log Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {},
+      "id": "no-overdue",
+      "name": "No Overdue Loans",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1120, 400]
+    }
+  ],
+  "connections": {
+    "Daily 9 AM Check": {
+      "main": [
+        [
+          {
+            "node": "Compute GET Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute GET Signature": {
+      "main": [
+        [
+          {
+            "node": "Fetch Overdue Loans",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Overdue Loans": {
+      "main": [
+        [
+          {
+            "node": "Has Overdue?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Overdue?": {
+      "main": [
+        [
+          {
+            "node": "Split Loans",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Overdue Loans",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Loans": {
+      "main": [
+        [
+          {
+            "node": "Send Reminder (Mock)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Reminder (Mock)": {
+      "main": [
+        [
+          {
+            "node": "Compute POST Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute POST Signature": {
+      "main": [
+        [
+          {
+            "node": "Mark Overdue in Convex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Overdue in Convex": {
+      "main": [
+        [
+          {
+            "node": "Log Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "lendloop",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "triggerCount": 0,
+  "versionId": "1"
+}
