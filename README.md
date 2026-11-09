@@ -195,7 +195,7 @@ npx convex dashboard
 
 ## What's Not Implemented
 
-This is a demo/take-home project. Missing for production:
+This is a portfolio demonstration project. Missing for production:
 
 - **Real notifications**: Replace mock logging with email/SMS/push
 - **Image uploads**: Tool photos
@@ -223,8 +223,9 @@ This is a demo/take-home project. Missing for production:
 
 ## License
 
-Private — not for redistribution.
+MIT
 
 ---
 
-Built for Fluence take-home assignment. Synthetic demo data only.
+A portfolio project demonstrating full-stack development with Next.js, Clerk, Convex, and n8n.
+Synthetic demo data only — no real user information.
